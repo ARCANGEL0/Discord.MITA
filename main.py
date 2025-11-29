@@ -5,7 +5,8 @@ import os
 import platform
 import psutil
 from db import db
-from lib.lang import ask_server_language
+
+
 # Load .env variables
 load_dotenv()
 TOKEN = os.getenv("TOKEN")
@@ -72,16 +73,11 @@ async def on_member_join(member):
     db.set_user_value(guild_id, user_id, "name", member.name)
     
     print(f"Usuário {member.name} registrado no banco do servidor {member.guild.name}")
-@bot.event
-async def on_guild_join(guild):
-    # Quando o bot entrar em um servidor novo
-    await ask_server_language(bot, guild)
-
-
+    
 # Ping command
 @bot.command()
 async def ping(ctx):
-    await ctx.send(f"Pong ♡ Latency: {round(bot.latency*1000)}ms")
+    await ctx.send(f"Pong Latency: {round(bot.latency*1000)}ms")
 
 # Run bot
 bot.run(TOKEN)
