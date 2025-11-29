@@ -27,6 +27,6 @@ async def ask_server_language(bot, guild: discord.Guild):
         return
     
     await channel.send(
-        "Entãão..~ vamos ver… qual será o idioma deste servidor, hm~ ? 💖 / Soo~ let’s see… what will be the language of our server, hm~~ 💖?",
+        "> Entãão..~ vamos ver… qual será o idioma deste servidor, hm~ ? 💖\n> Soo~ let’s see… what will be the language of our server, hm~~ 💖?\n\n",
         view=LanguageView()
     )
