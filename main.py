@@ -6,6 +6,8 @@ import platform
 import psutil
 from db import db
 from lib.lang import ask_server_language
+from lib import gpt_history, gpt
+
 # Load .env variables
 load_dotenv()
 TOKEN = os.getenv("TOKEN")
@@ -59,6 +61,18 @@ async def on_ready():
     print(f"Invite link: {os.getenv('INVITE_LINK')}")
     print("Mita is ready and online! 😏")
 
+
+@bot.event
+async def on_message(message):
+    # 1️⃣ Salva mensagem no histórico
+    gpt_history.register_message(message)
+
+    # 2️⃣ Verifica se cita "mita" e responde
+    if "mita" in message.content.lower():
+        await gpt.handle_mita_mention(message)
+
+    # 3️⃣ Permite outros comandos
+    await bot.process_commands(message)
 
 @bot.event
 async def on_member_join(member):

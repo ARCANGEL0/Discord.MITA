@@ -9,12 +9,18 @@ class LanguageView(View):
     @discord.ui.button(label="English", style=discord.ButtonStyle.primary)
     async def english(self, interaction: discord.Interaction, button: Button):
         db.set_server_value(str(interaction.guild.id), "language", "EN")
-        await interaction.response.edit_message(content="Language set to English ✅", view=None)
+        await interaction.response.edit_message(
+            content="All set!~ Language is now set to English. ✨",
+            view=None
+        )
 
     @discord.ui.button(label="Português", style=discord.ButtonStyle.success)
     async def portuguese(self, interaction: discord.Interaction, button: Button):
         db.set_server_value(str(interaction.guild.id), "language", "PT")
-        await interaction.response.edit_message(content="Idioma definido para Português ✅", view=None)
+        await interaction.response.edit_message(
+            content="Prontinho~! Tudo foi configurado para Português. ✨",
+            view=None
+        )
 
 async def ask_server_language(bot, guild: discord.Guild):
     # Pega o primeiro canal que o bot pode enviar mensagem
