@@ -5,7 +5,6 @@ import os
 import platform
 import psutil
 from db import db
-
 from lib.lang import ask_server_language
 # Load .env variables
 load_dotenv()
