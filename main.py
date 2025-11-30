@@ -7,6 +7,7 @@ import psutil
 from db import db
 from lib.lang import ask_server_language
 from lib import gpt_history, gpt
+import asyncio
 
 # Load .env variables
 load_dotenv()
@@ -21,7 +22,9 @@ intents.message_content = True
 # Bot instance
 bot = commands.Bot(command_prefix=PREFIX, intents=intents)
 
-# Function to get system info
+# -----------------------------
+# Helper functions
+# -----------------------------
 def get_system_info():
     info = {
         "OS": platform.system() + " " + platform.release(),
@@ -31,21 +34,21 @@ def get_system_info():
     }
     return info
 
-# New Mita-style header
 def print_mita_header():
     header = r"""
-                                                   
 ,--.   ,--.,--.  ,--.               ,---.   ,---.  
 |   `.'   |`--',-'  '-. ,--,--.    '   .-' '.-.  \ 
 |  |'.'|  |,--.'-.  .-'' ,-.  |    `.  `-.  .-' .' 
 |  |   |  ||  |  |  |  \ '-'  |    .-'    |/   '-. 
 `--'   `--'`--'  `--'   `--`--'    `-----' '-----' 
-                                                   
+
        ~ Mita is awake ~ 😏
-    """
+"""
     print(header)
 
-# Event: Bot ready
+# -----------------------------
+# Events
+# -----------------------------
 @bot.event
 async def on_ready():
     print_mita_header()
@@ -55,17 +58,11 @@ async def on_ready():
     print("===== System Info =====")
     for k, v in sys_info.items():
         print(f"{k}: {v}")
-    
     print("=======================")
     print(f"Prefix: {PREFIX}")
     print(f"Invite link: {os.getenv('INVITE_LINK')}")
     print("Mita is ready and online! 😏")
 
-
- # ---------
- # load modules
- # -------------
- 
 @bot.event
 async def on_message(message):
     # 1️⃣ Salva mensagem no histórico
@@ -82,30 +79,29 @@ async def on_message(message):
 async def on_member_join(member):
     guild_id = str(member.guild.id)
     user_id = str(member.id)
-    
-    # Garante que o usuário exista no banco
     db.ensure_user(guild_id, user_id)
-    
-    # Exemplo: guardar o nome do usuário
     db.set_user_value(guild_id, user_id, "name", member.name)
-    
     print(f"Usuário {member.name} registrado no banco do servidor {member.guild.name}")
+
 @bot.event
 async def on_guild_join(guild):
-    # Quando o bot entrar em um servidor novo
     await ask_server_language(bot, guild)
 
-
-# Ping command
+# -----------------------------
+# Commands
+# -----------------------------
 @bot.command()
 async def ping(ctx):
     await ctx.send(f"Pong ♡ Latency: {round(bot.latency*1000)}ms")
 
+# -----------------------------
 # Run bot
-# Antes de rodar bot.run(TOKEN)
-bot.load_extension("commands.langToggle")
-print("Comands loaded:")
-for cmd in bot.commands:
-    print(cmd.name)
+# -----------------------------
+async def main():
+    async with bot:
+        await bot.load_extension("commands.langToggle")  # carrega cog
+        await bot.start(TOKEN)
 
-bot.run(TOKEN)
+# Para rodar
+import asyncio
+asyncio.run(main())

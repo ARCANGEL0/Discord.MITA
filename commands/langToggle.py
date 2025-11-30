@@ -1,5 +1,6 @@
+import discord
 from discord.ext import commands
-from lib.lang import ask_server_language
+from lib.lang import LanguageView
 
 class LangToggle(commands.Cog):
     def __init__(self, bot):
@@ -7,12 +8,17 @@ class LangToggle(commands.Cog):
 
     @commands.command(name="lang")
     async def lang(self, ctx):
-        """Reenvia a mensagem de seleção de idioma."""
-        await ask_server_language(self.bot, ctx.guild)
+        """Reenvia a seleção de idioma"""
+        await ctx.send(
+            "> Entãão..~ vamos ver… qual será o idioma deste servidor, hm~ ? 💖\n> Soo~ let’s see… what will be the language of our server, hm~~ 💖?\n\n",
+            view=LanguageView()
+        )
 
     @commands.command(name="idioma")
     async def idioma(self, ctx):
-        await ask_server_language(self.bot, ctx.guild)
+        """Alias em português"""
+        await self.lang(ctx)
 
-def setup(bot):
-    bot.add_cog(LangToggle(bot))
+
+async def setup(bot):
+    await bot.add_cog(LangToggle(bot))
