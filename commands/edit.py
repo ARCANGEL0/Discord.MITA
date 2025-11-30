@@ -94,9 +94,9 @@ class Edit(commands.Cog):
                         await ctx.send(f"{edit_error_msg}\n\n`{text}`")
                         return
 
+                    # API already returns the image buffer
                     edited_bytes = await resp.read()
                     print(f"[DEBUG] API response received, length: {len(edited_bytes)} bytes")
-                    print(f"[DEBUG] First 100 bytes: {edited_bytes[:100]}")
 
         except Exception as e:
             print(f"[DEBUG] API call failed: {e}")
