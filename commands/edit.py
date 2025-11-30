@@ -39,4 +39,4 @@ class Edit(commands.Cog):
         await ctx.send(f"{sending_msg} 🌸\n{editada_url}\n\nPrompt:\n{texto} 💖")
 
 async def setup(bot):
-    await bot.add_cog(EditImage(bot))
+    await bot.add_cog(Edit(bot))
