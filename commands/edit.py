@@ -3,37 +3,33 @@ from lib.nano import editar_imagem
 from db import db
 import aiohttp
 import urllib.parse
+from discord.ext import commands
 
-@bot.command(name="edit")
-async def edit(ctx, *, texto=None):
-    guild_id = str(ctx.guild.id)
-    language = db.get_server_value(guild_id, "language", default="EN")
+# Cria um comando separado para registrar
+def setup(bot):
+    @bot.command(name="edit")
+    async def edit(ctx, *, texto=None):
+        guild_id = str(ctx.guild.id)
+        language = db.get_server_value(guild_id, "language", default="EN")
 
-    if language == "PT":
-        no_text_msg = "Oiii~ (๑・ω・๑)💖 O que você quer que eu edite? Me conta tudo, por favor~ 🌸"
-        no_image_msg = "Hm~ 🌸 parece que não tem imagem junto! Manda a imagem junto com `.imagem`, tá~? 💖"
-        sending_msg = "Tcharam~ 🌸 Sua obra de arte ficou prontinha! 💖"
-    else:  # English
-        no_text_msg = "Hehe~ (๑・ω・๑)💖 What would you like me to edit? Tell me everything~ 🌸"
-        no_image_msg = "Hm~ 🌸 Looks like there’s no image! Please send the image along with `.imagem`~ 💖"
-        sending_msg = "Tada~ 🌸 Your masterpiece is ready! 💖"
+        if language == "PT":
+            no_text_msg = "Oiii~ (๑・ω・๑)💖 O que você quer que eu edite? Me conta tudo, por favor~ 🌸"
+            no_image_msg = "Hm~ 🌸 parece que não tem imagem junto! Manda a imagem junto com `.imagem`, tá~? 💖"
+            sending_msg = "Tcharam~ 🌸 Sua obra de arte ficou prontinha! 💖"
+        else:  # English
+            no_text_msg = "Hehe~ (๑・ω・๑)💖 What would you like me to edit? Tell me everything~ 🌸"
+            no_image_msg = "Hm~ 🌸 Looks like there’s no image! Please send the image along with `.imagem`~ 💖"
+            sending_msg = "Tada~ 🌸 Your masterpiece is ready! 💖"
 
-    if not texto:
-        await ctx.send(no_text_msg)
-        return
+        if not texto:
+            await ctx.send(no_text_msg)
+            return
 
-    if not ctx.message.attachments:
-        await ctx.send(no_image_msg)
-        return
+        if not ctx.message.attachments:
+            await ctx.send(no_image_msg)
+            return
 
-    # lê a imagem enviada e salva em buffer
-    buffer = await ctx.message.attachments[0].read()
-
-    # upload pra pegar URL
-    original_url = await upload_image(buffer)
-
-    # chama a API de edição com o link da imagem
-    editada_url = await editar_imagem(texto, original_url)
-
-    # envia de volta pro Discord com jeitinho Mita
-    await ctx.send(f"{sending_msg} 🌸\n{editada_url}\n\nPrompt:\n{texto} 💖")
+        buffer = await ctx.message.attachments[0].read()
+        original_url = await upload_image(buffer)
+        editada_url = await editar_imagem(texto, original_url)
+        await ctx.send(f"{sending_msg} 🌸\n{editada_url}\n\nPrompt:\n{texto} 💖")
