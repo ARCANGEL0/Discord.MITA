@@ -13,6 +13,7 @@ MITA_COOL = "<:mitaglasses:1444759883990962269>"
 class Imagine(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+    language = db.get_server_value(guild_id, "language", default="EN")
     desct = (
             f"Generate an image with AI {MITA_COOL} " 
             if language == "PT" 
@@ -24,7 +25,7 @@ class Imagine(commands.Cog):
     )
     async def imagine(self, interaction: discord.Interaction, prompt: str = None):
         guild_id = str(interaction.guild.id)
-        language = db.get_server_value(guild_id, "language", default="EN")
+        
 
         # Caso não tenha prompt
         if not prompt:

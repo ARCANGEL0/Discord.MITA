@@ -10,7 +10,7 @@ MITA_COOL = "<:mitaglasses:1444759883990962269>"
 class Edit(commands.Cog):                                                     
     def __init__(self, bot):                                                  
         self.bot = bot                                                        
-                                                                              
+    language = db.get_server_value(guild_id, "language", default="EN")                                                                     
     desct = (
             f"Edit an image with AI {MITA_COOL} " 
             if language == "PT" 
@@ -25,10 +25,7 @@ class Edit(commands.Cog):
         guild_id = str(ctx.guild.id)                                          
                                                                               
         # Safe language fallback                                              
-        try:                                                                  
-            language = db.get_server_value(guild_id, "language", default="EN")
-        except Exception:                                                     
-            language = "EN"                                                   
+                                                 
                                                                               
         # Mita-style messages by language                                     
         if language == "PT":                                                  
