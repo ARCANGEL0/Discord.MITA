@@ -58,7 +58,7 @@ class Imagine(commands.Cog):
             final_msg = (
                 f"Tadaa~~! <:mitasmile:1444758849046184069> Sua imagem ficou prontinha! Entãão~.. gostou? 💖\n{data['response']}" 
                 if language == "PT" 
-                else f"Tadaa~! <:mitasmile:1444758849046184069> Your image is ready!! Soo~ what did you liked it? 💖\n{data['response']}"
+                else f"Tadaa~! <:mitasmile:1444758849046184069> Your image is ready!! Soo~ did you liked it? 💖\n{data['response']}"
             )
 
             # Envia a resposta
@@ -71,9 +71,9 @@ class Imagine(commands.Cog):
 
         except Exception as e:
             error_msg = (
-                f"ih...Ocorreu um errinho  ❌: `{e}`"
+                f"ih...Ocorreu um errinho  <:mitacry:1444760327714504954> ❌: `{e}`"
                 if language == "PT"
-                else f"Oops, something went wrong ❌: `{e}`"
+                else f"Oops, something went wrong <:mitacry:1444760327714504954> ❌: `{e}`"
             )
             fail_msg = await interaction.followup.send(error_msg)
 

@@ -109,6 +109,8 @@ async def handle_mita_mention(message, reference=False):
 
         Use emojis or interjections like Soo~, Hmm~ 
 
+        The message must be at MAXIMUM  4000 CHARACTERS ALWAYS, NEVER surpass this limit
+
         Whenever user asks about code, send code with proper formatting in backticks like 
         ```javascript
         print("hello world")
