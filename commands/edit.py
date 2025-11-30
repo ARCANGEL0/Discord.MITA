@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-from discord import app_commands
 import aiohttp
 from db import db
 
@@ -11,16 +10,13 @@ MITA_COOL = "<:mitaglasses:1444759883990962269>"
 class Edit(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-    @commands.command(name="edit", aliases=["imagem","texto"])                        
 
-    async def edit(self, interaction: discord.Interaction, texto: str):
+    @commands.command(name="edit", aliases=["imagem"])
+    async def edit(self, ctx, *, texto=None):
         """Edits an image based on the provided prompt."""
         print("[DEBUG] Command received")
 
-      
-
-        guild_id = str(interaction.guild.id)
-
+        guild_id = str(ctx.guild.id)
         # Safe language fallback
         try:
             language = db.get_server_value(guild_id, "language", default="EN")
@@ -28,9 +24,7 @@ class Edit(commands.Cog):
             language = "EN"
         print(f"[DEBUG] Language: {language}")
 
-        # ===========================
         # Mita-style messages
-        # ===========================
         if language == "PT":
             no_text_msg = "Oiii~ (๑・ω・๑)💖 O que você quer que eu edite? Me conta tudo, por favor~ 🌸"
             no_image_msg = "Hm~ 🌸 parece que não tem imagem junto! Manda a imagem junto com `.edit`, tá~? 💖"
@@ -40,47 +34,43 @@ class Edit(commands.Cog):
             no_text_msg = "Hehe~ (๑・ω・๑)💖 What would you like me to edit? Tell me everything~ 🌸"
             no_image_msg = "Hm~ 🌸 Looks like there’s no image! Please send the image along with `.edit`~ 💖"
             sending_msg = f"Tada~ {MITA_COOL} Your masterpiece is ready! 💖"
-            edit_error_msg = "Hm… something went wrong while editing {MITA_CRY}! Sorry (╥﹏╥), let’s try again, okay?~ 💖"
+            edit_error_msg = "Hm… something went wrong while editing {MITA_CRY}! Sorry (╥﹏╥), let’s try again 💖"
 
-        # ===============================
-        # Check text
-        # ===============================
+        # Check prompt
         if not texto:
             print("[DEBUG] No prompt provided")
-            await interaction.followup.send(no_text_msg)
+            await ctx.send(no_text_msg)
             return
         print(f"[DEBUG] Prompt: {texto}")
 
-        # ===============================
-        # Get image (attachment OR reply)
-        # ===============================
+        # Get image: attachment first
         image_bytes = None
         image_filename = None
 
-        # 1️⃣ Check attachment
-        if interaction.attachments:
-            att = interaction.attachments[0]
+        if ctx.message.attachments:
+            att = ctx.message.attachments[0]
             image_bytes = await att.read()
             image_filename = att.filename
             print(f"[DEBUG] Using uploaded attachment: {image_filename} ({len(image_bytes)} bytes)")
 
-        # 2️⃣ Check replied message attachments
-        elif interaction.data.get("resolved") and interaction.data["resolved"].get("attachments"):
-            ref_att = next(iter(interaction.data["resolved"]["attachments"].values()))
-            async with aiohttp.ClientSession() as session:
-                async with session.get(ref_att["url"]) as resp:
-                    image_bytes = await resp.read()
-                    image_filename = ref_att["filename"]
-                    print(f"[DEBUG] Using replied message attachment: {image_filename} ({len(image_bytes)} bytes)")
+        # If message is a reply, try to get attachment from replied message
+        elif ctx.message.reference:
+            replied_msg = await ctx.channel.fetch_message(ctx.message.reference.message_id)
+            if replied_msg.attachments:
+                att = replied_msg.attachments[0]
+                image_bytes = await att.read()
+                image_filename = att.filename
+                print(f"[DEBUG] Using replied message attachment: {image_filename} ({len(image_bytes)} bytes)")
 
-        # 3️⃣ No image found
         if not image_bytes:
             print("[DEBUG] No image found")
-            await interaction.followup.send(no_image_msg)
+            await ctx.send(no_image_msg)
             return
 
+        await ctx.message.add_reaction("🌸")
+
         # ===============================
-        # Send to API
+        # Send POST request to API
         # ===============================
         try:
             form = aiohttp.FormData()
@@ -101,7 +91,8 @@ class Edit(commands.Cog):
                     if resp.status != 200:
                         text = await resp.text()
                         print(f"[DEBUG] API error text: {text}")
-                        raise Exception(text)
+                        await ctx.send(f"{edit_error_msg}\n\n`{text}`")
+                        return
 
                     edited_bytes = await resp.read()
                     print(f"[DEBUG] API response received, length: {len(edited_bytes)} bytes")
@@ -109,15 +100,15 @@ class Edit(commands.Cog):
 
         except Exception as e:
             print(f"[DEBUG] API call failed: {e}")
-            await interaction.followup.send(f"{edit_error_msg}\n\n`{e}`")
+            await ctx.send(f"{edit_error_msg}\n\n`{e}`")
             return
 
         # ===============================
         # Send final result
         # ===============================
-        await interaction.followup.send(
+        await ctx.send(
             f"{sending_msg} 🌸\n\nPrompt:\n{texto} 💖",
-            file=discord.File(edited_bytes, filename="edited.png")
+            file=discord.File(fp=edited_bytes, filename="edited.png")
         )
         print("[DEBUG] Image sent successfully to Discord")
 
