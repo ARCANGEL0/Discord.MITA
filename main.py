@@ -103,14 +103,19 @@ async def ping(ctx):
     await ctx.send(f"Pong ♡ Latency: {round(bot.latency*1000)}ms")
 
 # Run bot
-commands_folder = "commands"
+async def main():
+    async with bot:
+        # Carrega todos os comandos automaticamente
+        for filename in os.listdir("commands"):
+            if filename.endswith(".py") and not filename.startswith("__"):
+                try:
+                    await bot.load_extension(f"commands.{filename[:-3]}")
+                    print(f"✅ {filename} carregado!")
+                except Exception as e:
+                    print(f"❌ Falha ao carregar {filename}: {e}")
+        
+        await bot.start(TOKEN)
+# Para rodar
+import asyncio
+asyncio.run(main())
 
-for filename in os.listdir(commands_folder):
-    if filename.endswith(".py") and not filename.startswith("__"):
-        ext_name = f"{commands_folder}.{filename[:-3]}"  # remove .py
-        try:
-            bot.load_extension(ext_name)
-            print(f"✅ Loaded command: {ext_name}")
-        except Exception as e:
-            print(f"❌ Failed to load command {ext_name}: {e}")
-bot.run(TOKEN)
