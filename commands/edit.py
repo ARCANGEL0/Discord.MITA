@@ -17,9 +17,7 @@ class Edit(commands.Cog):
         """Edits an image based on the provided prompt."""
         print("[DEBUG] Command received")
 
-        # Defer para evitar timeout de 3s
-        await interaction.response.defer()
-        print("[DEBUG] Deferred response to avoid timeout")
+      
 
         guild_id = str(interaction.guild.id)
 
