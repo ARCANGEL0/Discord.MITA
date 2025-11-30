@@ -14,7 +14,7 @@ class Edit(commands.Cog):
 
     @app_commands.command(
         name="edit",
-        description=f"Edit an image using AI {MITA_COOL}"
+        description=f"Edit an image using AI "
     )
     async def edit(self, interaction: discord.Interaction, texto: str):
         """Edits an image based on the provided prompt."""
