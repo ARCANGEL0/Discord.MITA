@@ -11,7 +11,8 @@ MITA_COOL = "<:mitaglasses:1444759883990962269>"
 class Edit(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
- 
+    @commands.command(name="edit", aliases=["imagem","texto"])                        
+
     async def edit(self, interaction: discord.Interaction, texto: str):
         """Edits an image based on the provided prompt."""
         print("[DEBUG] Command received")
