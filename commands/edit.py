@@ -1,7 +1,5 @@
 import discord                                                                
-from discord.ext import commands           
-from discord import app_commands
-                                   
+from discord.ext import commands                                              
 from lib.uploadImage import upload_image                                      
 from lib.nano import editar_imagem                                            
 from db import db                                                             
@@ -13,10 +11,7 @@ class Edit(commands.Cog):
     def __init__(self, bot):                                                  
         self.bot = bot                                                        
                                                                               
-    @app_commands.command(
-        name="edit",
-        description=f"Edit an image using AI {MITA_COOL} \n Edita uma imagem usando IA {MITA_COOL}"
-    )                     
+    @commands.command(name="edit", aliases=["imagem"])                        
     async def edit(self, ctx, *, texto=None):                                 
         """Edits an image based on the provided prompt."""                    
         guild_id = str(ctx.guild.id)                                          
