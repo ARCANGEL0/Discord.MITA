@@ -43,6 +43,13 @@ def print_mita_header():
 
 @bot.event
 async def on_ready():
+    try:
+        synced = await bot.tree.sync()
+        print(f"Synced {len(synced)} commands!")
+    except Exception as e:
+        print("Erro ao sync:", e)
+
+    print(f"BOT ONLINE: {bot.user}")
     print_mita_header()
     print(f"MitaBot is online as {bot.user} (ID: {bot.user.id})")
     sys_info = get_system_info()
