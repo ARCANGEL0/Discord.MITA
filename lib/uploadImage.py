@@ -2,11 +2,8 @@ import aiohttp
 import filetype
 
 async def upload_image(buffer: bytes) -> str:
-    """
-    Tenta enviar a imagem para qu.ax primeiro, se falhar vai pro Telegraph como fallback.
-    Retorna a URL da imagem.
-    """
-    # Detecta tipo de imagem
+    """Faz upload de imagem para qu.ax ou Telegraph como fallback."""
+    # detecta tipo da imagem pelo buffer
     kind = filetype.guess(buffer)
     if kind:
         ext = kind.extension
@@ -16,7 +13,7 @@ async def upload_image(buffer: bytes) -> str:
         mime = "image/png"
 
     # ---------------------------
-    # 1️⃣ Upload pra qu.ax
+    # 1️⃣ Tenta qu.ax
     # ---------------------------
     form = aiohttp.FormData()
     form.add_field("files[]", buffer, filename=f"upload.{ext}", content_type=mime)
@@ -24,14 +21,15 @@ async def upload_image(buffer: bytes) -> str:
     async with aiohttp.ClientSession() as session:
         try:
             async with session.post("https://qu.ax/upload.php", data=form) as resp:
-                # qu.ax retornou HTML em vez de JSON?
-                if resp.content_type != "application/json":
-                    raise Exception(f"Unexpected mimetype: {resp.content_type}")
-                data = await resp.json()
-                if data.get("success"):
-                    return data["files"][0]["url"]
+                content_type = resp.headers.get("Content-Type", "")
+                if "application/json" in content_type:
+                    data = await resp.json()
+                    if data.get("success"):
+                        return data["files"][0]["url"]
+                else:
+                    print(f"⚠️ qu.ax retornou mimetype inesperado: {content_type}")
         except Exception as e:
-            print(f"Erro no upload qu.ax: {e}")
+            print("Erro no upload qu.ax:", e)
 
         # ---------------------------
         # 2️⃣ Fallback: Telegraph
@@ -45,7 +43,7 @@ async def upload_image(buffer: bytes) -> str:
                 if isinstance(data, list) and "src" in data[0]:
                     return "https://telegra.ph" + data[0]["src"]
         except Exception as e:
-            print(f"Erro no fallback Telegraph: {e}")
+            print("Erro no fallback Telegraph:", e)
 
-    # Se tudo falhar, levanta exceção
+    # se tudo falhar
     raise Exception("Upload falhou nos dois serviços.")
