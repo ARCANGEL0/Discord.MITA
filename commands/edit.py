@@ -2,6 +2,7 @@ from lib.uploadImage import upload_image
 from db import db
 import aiohttp
 import urllib.parse
+import filetype 
 
 API_KEY = "syOYUG" # essa e minha chave API pra autenticacao
 
