@@ -6,7 +6,7 @@ from db import db
 import aiohttp
 import urllib.parse
 
-class EditImage(commands.Cog):
+class Edit(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
