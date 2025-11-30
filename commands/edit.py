@@ -28,7 +28,6 @@ async def edit(ctx, *, texto=None):
     guild_id = str(ctx.guild.id)
     language = db.get_server_value(guild_id, "language", default="EN")
 
-    # Mensagens estilo Mita, fofinhas e gentis
     if language == "PT":
         no_text_msg = "Oiii~ (๑・ω・๑)💖 O que você quer que eu edite? Me conta tudo, por favor~ 🌸"
         no_image_msg = "Hm~ 🌸 parece que não tem imagem junto! Manda a imagem junto com `.imagem`, tá~? 💖"
