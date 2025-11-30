@@ -16,7 +16,7 @@ class Imagine(commands.Cog):
 
     @app_commands.command(
         name="imagine",
-        description="Generate an image using AI {MITA_COOL} \n Gera uma imagem usando IA {MITA_COOL}"
+        description=f"Generate an image using AI {MITA_COOL} \n Gera uma imagem usando IA {MITA_COOL}"
     )
     async def imagine(self, interaction: discord.Interaction, prompt: str = None):
         guild_id = str(interaction.guild.id)
