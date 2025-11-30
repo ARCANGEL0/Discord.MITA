@@ -12,12 +12,15 @@ class Edit(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    
+    @app_commands.command(
+        name="edit",
+        description=f"Edit an image using AI {MITA_COOL} \n Edita uma imagem usando IA {MITA_COOL}"
+    )
     async def edit(self, interaction: discord.Interaction, texto: str):
         """Edits an image based on the provided prompt."""
         print("[DEBUG] Command received")
-        
-        # informa ao Discord que estamos processando
+
+        # Defer para evitar timeout de 3s
         await interaction.response.defer()
         print("[DEBUG] Deferred response to avoid timeout")
 
@@ -37,13 +40,11 @@ class Edit(commands.Cog):
             no_text_msg = "Oiii~ (๑・ω・๑)💖 O que você quer que eu edite? Me conta tudo, por favor~ 🌸"
             no_image_msg = "Hm~ 🌸 parece que não tem imagem junto! Manda a imagem junto com `.edit`, tá~? 💖"
             sending_msg = f"Tcharam~ {MITA_COOL} Sua obra de arte ficou prontinha! 💖"
-            upload_error_msg = "Ih... {MITA_CRY} não consegui enviar a imagem! Tenta me enviar denovo, por favor~💖"
             edit_error_msg = f"Ih... Algo deu errado ao editar {MITA_CRY}! 🌸 Me perdoa (╥﹏╥), vamos tentar de novo 💖"
         else:
             no_text_msg = "Hehe~ (๑・ω・๑)💖 What would you like me to edit? Tell me everything~ 🌸"
             no_image_msg = "Hm~ 🌸 Looks like there’s no image! Please send the image along with `.edit`~ 💖"
             sending_msg = f"Tada~ {MITA_COOL} Your masterpiece is ready! 💖"
-            upload_error_msg = "Oops… {MITA_CRY} Sorry ! I couldn’t upload your image! Try sending me the image again, okay~? 💖"
             edit_error_msg = "Hm… something went wrong while editing {MITA_CRY}! Sorry (╥﹏╥), let’s try again, okay?~ 💖"
 
         # ===============================
@@ -56,28 +57,28 @@ class Edit(commands.Cog):
         print(f"[DEBUG] Prompt: {texto}")
 
         # ===============================
-        # Get image (attachment OR marked)
+        # Get image (attachment OR reply)
         # ===============================
         image_bytes = None
         image_filename = None
 
-        # A) User uploaded an image with the slash command
+        # 1️⃣ Check attachment
         if interaction.attachments:
             att = interaction.attachments[0]
             image_bytes = await att.read()
             image_filename = att.filename
             print(f"[DEBUG] Using uploaded attachment: {image_filename} ({len(image_bytes)} bytes)")
 
-        # B) User selected an image (resolved attachments)
+        # 2️⃣ Check replied message attachments
         elif interaction.data.get("resolved") and interaction.data["resolved"].get("attachments"):
             ref_att = next(iter(interaction.data["resolved"]["attachments"].values()))
             async with aiohttp.ClientSession() as session:
                 async with session.get(ref_att["url"]) as resp:
                     image_bytes = await resp.read()
                     image_filename = ref_att["filename"]
-                    print(f"[DEBUG] Using referenced image: {image_filename} ({len(image_bytes)} bytes)")
+                    print(f"[DEBUG] Using replied message attachment: {image_filename} ({len(image_bytes)} bytes)")
 
-        # C) No image found
+        # 3️⃣ No image found
         if not image_bytes:
             print("[DEBUG] No image found")
             await interaction.followup.send(no_image_msg)
