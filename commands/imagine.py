@@ -33,9 +33,9 @@ class Imagine(commands.Cog):
 
         # Mensagem inicial
         waiting_msg = (
-            f"Humm~ estou pensando no que você pediu: **{prompt}**… 💖" 
+            f"Humm~ então você quer que eu desenha algo tipo:\n```plaintext\n**{prompt}**… \n```\n Pode deixar! 💖" 
             if language == "PT" 
-            else f"Hehe~ thinking about your request: **{prompt}**… 💖"
+            else f"Okiee~~, soo, you want me to make something like:\n ```plaintext\n**{prompt}**…\n```\n Got it! 💖"
         )
         await interaction.response.send_message(waiting_msg)
         sent_msg = await interaction.original_response()
@@ -56,9 +56,9 @@ class Imagine(commands.Cog):
 
             # Mensagem final
             final_msg = (
-                f"Sua imagem ficou prontinha! 💖\n{data['response']}" 
+                f"Tadaa~~! <:mitasmile:1444758849046184069> Sua imagem ficou prontinha! Entãão~.. gostou? 💖\n{data['response']}" 
                 if language == "PT" 
-                else f"Your image is ready! 💖\n{data['response']}"
+                else f"Tadaa~! <:mitasmile:1444758849046184069> Your image is ready!! Soo~ what did you liked it? 💖\n{data['response']}"
             )
 
             # Envia a resposta
@@ -71,7 +71,7 @@ class Imagine(commands.Cog):
 
         except Exception as e:
             error_msg = (
-                f"Ocorreu um errinho ❌: `{e}`"
+                f"ih...Ocorreu um errinho  ❌: `{e}`"
                 if language == "PT"
                 else f"Oops, something went wrong ❌: `{e}`"
             )
