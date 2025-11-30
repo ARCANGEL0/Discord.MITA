@@ -3,6 +3,7 @@ from discord.ext import commands
 import aiohttp
 from db import db
 import imghdr
+import io  # <- importante
 
 MITA_SMILE = "<:mitasmile:1444758849046184069>"
 MITA_CRY = "<:mitacry:1444760327714504954>"
@@ -90,10 +91,9 @@ class Edit(commands.Cog):
 
                     edited_bytes = await resp.read()
                     print(f"[DEBUG] API response received, length: {len(edited_bytes)} bytes")
-                    # Detect image type
                     img_type = imghdr.what(None, edited_bytes)
                     if not img_type:
-                        img_type = "jpg"  # fallback
+                        img_type = "jpg"
                     print(f"[DEBUG] Detected image type: {img_type}")
 
         except Exception as e:
@@ -102,13 +102,18 @@ class Edit(commands.Cog):
             return
 
         # ===============================
-        # Send final result
+        # Send final result (wrap bytes in io.BytesIO)
         # ===============================
-        await ctx.send(
-            f"{sending_msg} 🌸\n\nPrompt:\n{texto} 💖",
-            file=discord.File(fp=edited_bytes, filename=f"edited.{img_type}")
-        )
-        print("[DEBUG] Image sent successfully to Discord")
+        try:
+            file_buffer = io.BytesIO(edited_bytes)
+            await ctx.send(
+                f"{sending_msg} 🌸\n\nPrompt:\n{texto} 💖",
+                file=discord.File(fp=file_buffer, filename=f"edited.{img_type}")
+            )
+            print("[DEBUG] Image sent successfully to Discord")
+        except Exception as e:
+            print(f"[DEBUG] Failed to send Discord file: {e}")
+            await ctx.send(f"{edit_error_msg}\n\n`{e}`")
 
 
 async def setup(bot):
