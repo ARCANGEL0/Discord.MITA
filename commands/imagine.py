@@ -8,14 +8,19 @@ from db import db  # seu helper de banco
 # Custom emojis
 MITA_SMILE = "<:mitasmile:1444758849046184069>"
 MITA_CRY = "<:mitacry:1444760327714504954>"
+MITA_COOL = "<:mitaglasses:1444759883990962269>"    
 
 class Imagine(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
+    desct = (
+            f"Generate an image with AI {MITA_COOL} " 
+            if language == "PT" 
+            else f"Gera uma imagem com IA {MITA_COOL} "
+    )
     @app_commands.command(
         name="imagine",
-        description="Gera uma imagem a partir de um prompt."
+        description=desct
     )
     async def imagine(self, interaction: discord.Interaction, prompt: str = None):
         guild_id = str(interaction.guild.id)

@@ -11,7 +11,15 @@ class Edit(commands.Cog):
     def __init__(self, bot):                                                  
         self.bot = bot                                                        
                                                                               
-    @commands.command(name="edit", aliases=["imagem"])                        
+    desct = (
+            f"Edit an image with AI {MITA_COOL} " 
+            if language == "PT" 
+            else f"Edita uma imagem com IA {MITA_COOL} "
+    )
+    @app_commands.command(
+        name="imagine",
+        description=desct
+    )                   
     async def edit(self, ctx, *, texto=None):                                 
         """Edits an image based on the provided prompt."""                    
         guild_id = str(ctx.guild.id)                                          
