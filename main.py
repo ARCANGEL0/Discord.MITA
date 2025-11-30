@@ -65,16 +65,31 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
-    # 1️⃣ Salva mensagem no histórico
+    # evita o bot processando a si mesmo
+    if message.author == bot.user:
+        return
+
+    # 1️⃣ Salva mensagem no histórico normal
     gpt_history.register_message(message)
 
-    # 2️⃣ Verifica se cita "mita" e responde
+    # 2️⃣ Caso seja uma resposta a mensagem gerada pelo GPT
+    reference = getattr(message.reference, "message_id", None)
+    if reference:
+        # verifica se a mensagem original é uma resposta do GPT
+        for user_id, user_data in db.data["chats"][str(message.guild.id)]["users"].items():
+            historico_gpt = user_data.get("historico_gpt", [])
+            # checa se reference ID está presente
+            if any(r.get("id") == reference for r in historico_gpt if isinstance(r, dict) and r.get("role")=="assistant"):
+                await gpt.handle_mita_mention(message, reference=True)
+                return
+
+    # 3️⃣ Caso contenha "mita"
     if "mita" in message.content.lower():
         await gpt.handle_mita_mention(message)
+        return
 
-    # 3️⃣ Permite outros comandos
+    # 4️⃣ Permite outros comandos
     await bot.process_commands(message)
-
 @bot.event
 async def on_member_join(member):
     guild_id = str(member.guild.id)
