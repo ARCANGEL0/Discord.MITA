@@ -7,9 +7,8 @@ import psutil
 from db import db
 from lib.lang import ask_server_language
 from lib import gpt_history, gpt
-import asyncio
 
-# Load .env variables
+# Load .env
 load_dotenv()
 TOKEN = os.getenv("TOKEN")
 PREFIX = os.getenv("PREFIX")
@@ -19,20 +18,15 @@ intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
 
-# Bot instance
 bot = commands.Bot(command_prefix=PREFIX, intents=intents)
 
-# -----------------------------
-# Helper functions
-# -----------------------------
 def get_system_info():
-    info = {
+    return {
         "OS": platform.system() + " " + platform.release(),
         "CPU": platform.processor(),
         "RAM": f"{round(psutil.virtual_memory().total / (1024 ** 3), 2)} GB",
         "Python": platform.python_version()
     }
-    return info
 
 def print_mita_header():
     header = r"""
@@ -41,19 +35,16 @@ def print_mita_header():
 |  |'.'|  |,--.'-.  .-'' ,-.  |    `.  `-.  .-' .' 
 |  |   |  ||  |  |  |  \ '-'  |    .-'    |/   '-. 
 `--'   `--'`--'  `--'   `--`--'    `-----' '-----' 
-
        ~ Mita is awake ~ 😏
 """
     print(header)
 
-# -----------------------------
-# Events
-# -----------------------------
+# -------- EVENTS --------
+
 @bot.event
 async def on_ready():
     print_mita_header()
     print(f"MitaBot is online as {bot.user} (ID: {bot.user.id})")
-    
     sys_info = get_system_info()
     print("===== System Info =====")
     for k, v in sys_info.items():
@@ -62,32 +53,6 @@ async def on_ready():
     print(f"Prefix: {PREFIX}")
     print(f"Invite link: {os.getenv('INVITE_LINK')}")
     print("Mita is ready and online! 😏")
-
-@bot.event
-async def on_message(message):
-    if message.author.bot:
-        return
-
-    # 1️⃣ Salva no histórico normal
-    gpt_history.register_message(message)
-
-    # 2️⃣ Checa se é uma resposta a mensagem GPT
-    reference_id = getattr(message.reference, "message_id", None)
-    if reference_id:
-        guild_chat = db.get_chat(str(message.guild.id))
-        for user_data in guild_chat["users"].values():
-            for entry in user_data.get("historico_gpt", []):
-                if entry.get("role") == "assistant" and entry.get("id") == reference_id:
-                    await gpt.handle_mita_mention(message, reference=True)
-                    return
-
-    # 3️⃣ Checa se a mensagem cita "mita"
-    if "mita" in message.content.lower():
-        await gpt.handle_mita_mention(message)
-        return
-
-    # 4️⃣ Processa outros comandos normalmente
-    await bot.process_commands(message)
 
 @bot.event
 async def on_member_join(member):
@@ -101,21 +66,41 @@ async def on_member_join(member):
 async def on_guild_join(guild):
     await ask_server_language(bot, guild)
 
-# -----------------------------
-# Commands
-# -----------------------------
+# --------- ON MESSAGE ---------
+@bot.event
+async def on_message(message):
+    if message.author.bot or message.guild is None:
+        return
+
+    # Salva mensagem no histórico normal
+    gpt_history.register_message(message)
+
+    handled = False
+    ref_id = getattr(message.reference, "message_id", None)
+
+    if ref_id:
+        guild_id = str(message.guild.id)
+        guild_chat = db.get_chat(guild_id)
+        for user_id, user_data in guild_chat["users"].items():
+            for entry in user_data.get("historico_gpt", []):
+                if entry.get("role") == "assistant" and entry.get("id") == ref_id:
+                    # mensagem do GPT respondida
+                    await gpt.handle_mita_mention(message, reference=True)
+                    handled = True
+                    break
+            if handled:
+                break
+
+    # Se não for resposta a GPT, checa se cita "mita"
+    if not handled and "mita" in message.content.lower():
+        await gpt.handle_mita_mention(message)
+
+    await bot.process_commands(message)
+
+# --------- COMMANDS ---------
 @bot.command()
 async def ping(ctx):
     await ctx.send(f"Pong ♡ Latency: {round(bot.latency*1000)}ms")
 
-# -----------------------------
 # Run bot
-# -----------------------------
-async def main():
-    async with bot:
-        await bot.load_extension("commands.langToggle")  # carrega cog
-        await bot.start(TOKEN)
-
-# Para rodar
-import asyncio
-asyncio.run(main())
+bot.run(TOKEN)

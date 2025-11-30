@@ -3,17 +3,15 @@ from db import db
 
 BASE_URL = "http://129.146.165.179/gpt4"
 
-async def handle_mita_mention(message, reference=None):
-    """
-    Se a mensagem citar 'mita' OU for uma resposta a mensagem gerada pelo GPT, chama a API GPT e salva resposta
-    """
+async def handle_mita_mention(message, reference=False):
+    """Se a mensagem citar 'mita' ou responder uma mensagem do GPT, chama a API GPT"""
     if message.author.bot or message.guild is None:
         return
 
     guild_id = str(message.guild.id)
     user_id = str(message.author.id)
 
-    # Pega idioma  
+    # Pega idioma do servidor
     language = db.get_server_value(guild_id, "language", default="EN")
 
     prompt = """
@@ -108,43 +106,26 @@ async def handle_mita_mention(message, reference=None):
         Replies are short, natural, emotionally reactive, and varied.
     """
 
- # Garante usuário no banco
+
+    # garante usuário no db
     db.ensure_user(guild_id, user_id)
     user = db.get_user(guild_id, user_id)
     hist_gpt = user.get("historico_gpt", [])
 
-    # Se for uma resposta a mensagem do GPT, mantém histórico
-    if reference:
-        # reference é uma mensagem enviada pelo bot anteriormente, podemos opcionalmente pegar histórico já salvo
-        hist_gpt = user.get("historico_gpt", [])
-        hist_gpt.append({
-            "role": "user",
-            "content": (
-                f"{prompt}\n\n"
-                f"User Information:\n"
-                f"- Username: {message.author.name}\n"
-                f"- Client ID: {message.author.id}\n\n"
-                f"User replied to previous GPT message:\n"
-                f"{message.content}\n\n"
-                f"Now answer the following user request in "
-                f"{'Português' if language == 'PT' else 'English'}."
-            )
-        })
-    else:
-        # mensagem original citando 'mita'
-        hist_gpt.append({
-            "role": "user",
-            "content": (
-                f"{prompt}\n\n"
-                f"User Information:\n"
-                f"- Username: {message.author.name}\n"
-                f"- Client ID: {message.author.id}\n\n"
-                f"User Message:\n"
-                f"{message.content}\n\n"
-                f"Now answer the following user request in "
-                f"{'Português' if language == 'PT' else 'English'}."
-            )
-        })
+    # Adiciona pergunta do usuário
+    hist_gpt.append({
+        "role": "user",
+        "content": (
+            f"{prompt}\n\n"
+            f"User Information:\n"
+            f"- Username: {message.author.name}\n"
+            f"- Client ID: {message.author.id}\n\n"
+            f"User Message:\n"
+            f"{message.content}\n\n"
+            f"Now answer the following user request in "
+            f"{'Português' if language == 'PT' else 'English'}."
+        )
+    })
 
     # Chama API GPT
     async with aiohttp.ClientSession() as session:
@@ -152,13 +133,13 @@ async def handle_mita_mention(message, reference=None):
             data = await resp.json()
             assistant_response = data.get("response", "Erro: sem resposta da API")
 
-    # Salva resposta no histórico
-    hist_gpt.append({"role": "assistant", "content": assistant_response})
+    # Envia a resposta e salva no histórico com ID
+    sent_msg = await message.reply(assistant_response)
+
+    hist_gpt.append({
+        "role": "assistant",
+        "content": assistant_response,
+        "id": sent_msg.id
+    })
     user["historico_gpt"] = hist_gpt
     db.save()
-
-    # Responde diretamente na mensagem
-    sent_msg = await message.reply(f"{assistant_response}")
-
-    # Retorna a mensagem enviada (pode ser usada para registrar ID)
-    return sent_msg
