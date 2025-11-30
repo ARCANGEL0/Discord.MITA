@@ -7,6 +7,7 @@ class LangToggle(commands.Cog):
 
     @commands.command(name="lang")
     async def lang(self, ctx):
+        """Reenvia a mensagem de seleção de idioma."""
         await ask_server_language(self.bot, ctx.guild)
 
     @commands.command(name="idioma")

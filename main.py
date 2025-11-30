@@ -65,9 +65,7 @@ async def on_ready():
  # ---------
  # load modules
  # -------------
-bot.load_extension("commands.langToggle")
-
-
+ 
 @bot.event
 async def on_message(message):
     # 1️⃣ Salva mensagem no histórico
@@ -104,4 +102,10 @@ async def ping(ctx):
     await ctx.send(f"Pong ♡ Latency: {round(bot.latency*1000)}ms")
 
 # Run bot
+# Antes de rodar bot.run(TOKEN)
+bot.load_extension("commands.langToggle")
+print("Comands loaded:")
+for cmd in bot.commands:
+    print(cmd.name)
+
 bot.run(TOKEN)
