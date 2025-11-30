@@ -62,6 +62,12 @@ async def on_ready():
     print("Mita is ready and online! 😏")
 
 
+ # ---------
+ # load modules
+ # -------------
+bot.load_extension("commands.langToggle")
+
+
 @bot.event
 async def on_message(message):
     # 1️⃣ Salva mensagem no histórico
