@@ -1,14 +1,18 @@
+import discord
+from discord.ext import commands
 from lib.uploadImage import upload_image
 from lib.nano import editar_imagem
 from db import db
 import aiohttp
 import urllib.parse
-from discord.ext import commands
 
-# Cria um comando separado para registrar
-def setup(bot):
-    @bot.command(name="edit")
-    async def edit(ctx, *, texto=None):
+class EditImage(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @commands.command(name="edit")
+    async def edit(self, ctx, *, texto=None):
+        """Edita uma imagem com base no prompt fornecido."""
         guild_id = str(ctx.guild.id)
         language = db.get_server_value(guild_id, "language", default="EN")
 
@@ -33,3 +37,6 @@ def setup(bot):
         original_url = await upload_image(buffer)
         editada_url = await editar_imagem(texto, original_url)
         await ctx.send(f"{sending_msg} 🌸\n{editada_url}\n\nPrompt:\n{texto} 💖")
+
+async def setup(bot):
+    await bot.add_cog(EditImage(bot))
