@@ -10,22 +10,20 @@ MITA_COOL = "<:mitaglasses:1444759883990962269>"
 class Edit(commands.Cog):                                                     
     def __init__(self, bot):                                                  
         self.bot = bot                                                        
-    language = db.get_server_value(guild_id, "language", default="EN")                                                                     
-    desct = (
-            f"Edit an image with AI {MITA_COOL} " 
-            if language == "PT" 
-            else f"Edita uma imagem com IA {MITA_COOL} "
-    )
+                                                                              
     @app_commands.command(
-        name="imagine",
-        description=desct
-    )                   
+        name="edit",
+        description=f"Edit an image using AI {MITA_COOL} \n Edita uma imagem usando IA {MITA_COOL}"
+    )                     
     async def edit(self, ctx, *, texto=None):                                 
         """Edits an image based on the provided prompt."""                    
         guild_id = str(ctx.guild.id)                                          
                                                                               
         # Safe language fallback                                              
-                                                 
+        try:                                                                  
+            language = db.get_server_value(guild_id, "language", default="EN")
+        except Exception:                                                     
+            language = "EN"                                                   
                                                                               
         # Mita-style messages by language                                     
         if language == "PT":                                                  
