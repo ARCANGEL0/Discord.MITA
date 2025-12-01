@@ -87,34 +87,30 @@ async def on_message(message):
     if message.author.bot or message.guild is None:
         return
 
-    guild_id = str(message.guild.id)
-    user_id = str(message.author.id)
-
-    # Registrar mensagem no histórico global
+    # Register in global history (optional)
     gpt_history.register_message(message)
 
     handled = False
 
-    # Detecta quando o usuário está respondendo à Mita
+    # 1️⃣ Check if message is a reply
     if message.reference and message.reference.message_id:
-        replied_id = message.reference.message_id
+        try:
+            ref_channel = bot.get_channel(message.reference.channel_id) or await bot.fetch_channel(message.reference.channel_id)
+            ref_message = await ref_channel.fetch_message(message.reference.message_id)
+        except:
+            ref_message = None
 
-        # Procurar em todos os usuários do servidor
-        for u_id in db.get_all_user_ids(guild_id):
-            user = db.get_user(guild_id, u_id)
-            hist = user.get("historico_gpt", [])
-            for entry in hist:
-                if entry.get("role") == "assistant" and entry.get("id") == replied_id:
-                    await gpt.handle_mita_mention(message, reference=True)
-                    handled = True
-                    break
-            if handled:
-                break
+        if ref_message and ref_message.author.id == bot.user.id:
+            # ✅ Trigger GPT because it's a reply to a Mita message
+            await gpt.handle_mita_mention(message, reference=True)
+            handled = True
 
-    # Se não foi reply, mas mencionou "mita"
+    # 2️⃣ Check if message mentions "mita"
     if not handled and "mita" in message.content.lower():
         await gpt.handle_mita_mention(message)
+        handled = True
 
+    # Let commands still work
     await bot.process_commands(message)
 
 # ------------------------------
