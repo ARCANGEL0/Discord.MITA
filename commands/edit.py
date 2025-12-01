@@ -16,9 +16,10 @@ class Edit(commands.Cog):
 
     @commands.command(name="edit", aliases=["imagem"])
     async def edit(self, ctx, *, texto=None):
+        await ctx.add_reaction("<:loading:1444867632309342289>")
         print("[DEBUG] Command received")
         guild_id = str(ctx.guild.id)
-        await ctx.add_reaction("<:loading:1444867632309342289>")
+        
 
         try:
             language = db.get_server_value(guild_id, "language", default="EN")
