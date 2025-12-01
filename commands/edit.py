@@ -3,7 +3,7 @@ from discord.ext import commands
 from db import db
 import io
 import imghdr
-from lib.nano import nanobanana  # seu módulo
+from lib.nano import nanobanana # chama o nano
 import aiohttp
 import asyncio
 

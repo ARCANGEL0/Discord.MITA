@@ -12,7 +12,6 @@ async def nanobanana(prompt: str, image_bytes: bytes):
 
     identity = str(uuid.uuid4())
 
-    # axios.create equivalent
     base_headers = {
         "authorization": "null",
         "origin": "https://supawork.ai/",
