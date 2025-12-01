@@ -9,7 +9,7 @@ from db import db  # seu helper de banco
 MITA_SMILE = "<:mitasmile:1444758849046184069>"
 MITA_CRY = "<:mitacry:1444760327714504954>"
 MITA_COOL = "<:mitaglasses:1444759883990962269>"    
-       
+ 
 class Imagine(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -21,7 +21,10 @@ class Imagine(commands.Cog):
     async def imagine(self, interaction: discord.Interaction, prompt: str = None):
         guild_id = str(interaction.guild.id)
         language = db.get_server_value(guild_id, "language", default="EN")
-
+        try:
+            await msg.add_reaction("<:loading:1444867632309342289>")
+        except:
+            pass      
         # Caso não tenha prompt
         if not prompt:
             msg = (
@@ -65,12 +68,16 @@ class Imagine(commands.Cog):
             # Envia a resposta
             followup = await interaction.followup.send(final_msg)
 
-            # Reage à mensagem com emoji da Mita
-            emoji = discord.utils.get(interaction.guild.emojis, name="mitasmile")
-            if emoji:
-                await followup.add_reaction(emoji)
+            try:
+                await msg.add_reaction(MITA_SMILE)
+            except:
+                pass 
 
         except Exception as e:
+            try:
+                await msg.add_reaction(MITA_CRY)
+            except:
+                pass 
             error_msg = (
                 f"ih...Ocorreu um errinho  <:mitacry:1444760327714504954> ❌: `{e}`"
                 if language == "PT"

@@ -8,7 +8,7 @@ import io  # <- importante
 MITA_SMILE = "<:mitasmile:1444758849046184069>"
 MITA_CRY = "<:mitacry:1444760327714504954>"
 MITA_COOL = "<:mitaglasses:1444759883990962269>"
-
+  
 class Edit(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -17,6 +17,7 @@ class Edit(commands.Cog):
     async def edit(self, ctx, *, texto=None):
         print("[DEBUG] Command received")
         guild_id = str(ctx.guild.id)
+        await ctx.add_reaction("<:loading:1444867632309342289>")
 
         try:
             language = db.get_server_value(guild_id, "language", default="EN")
@@ -62,8 +63,7 @@ class Edit(commands.Cog):
             await ctx.send(no_image_msg)
             return
 
-        await ctx.message.add_reaction("🌸")
-
+ 
         # ===============================
         # Send POST request
         # ===============================
@@ -97,6 +97,11 @@ class Edit(commands.Cog):
                     print(f"[DEBUG] Detected image type: {img_type}")
 
         except Exception as e:
+        
+            try:
+                await ctx.add_reaction(MITA_CRY)
+            except:
+                pass 
             print(f"[DEBUG] API call failed: {e}")
             await ctx.send(f"{edit_error_msg}\n\n`{e}`")
             return
@@ -111,7 +116,17 @@ class Edit(commands.Cog):
                 file=discord.File(fp=file_buffer, filename=f"edited.{img_type}")
             )
             print("[DEBUG] Image sent successfully to Discord")
+            
+            try:
+                await ctx.add_reaction(MITA_SMILE)
+            except:
+                pass 
+
         except Exception as e:
+            try:
+                await ctx.add_reaction(MITA_CRY)
+            except:
+                pass 
             print(f"[DEBUG] Failed to send Discord file: {e}")
             await ctx.send(f"{edit_error_msg}\n\n`{e}`")
 
