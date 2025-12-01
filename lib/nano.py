@@ -1,49 +1,52 @@
-import aiohttp
-import urllib.parse
-from db import db
+import requests
+import uuid
+from time import sleep
 
-API_KEY = "syOYUG"  # sua chave API
+async def nanobanana(prompt, image):
+    try:
+        identity = str(uuid.uuid4())
+        session = requests.Session()
+        session.headers.update({
+            'origin': 'https://supawork.ai/',
+            'referer': 'https://supawork.ai/nano-banana',
+            'x-identity-id': identity
+        })
 
-async def editar_imagem(texto: str, imagem_url: str, guild_id: str = None) -> str:
-    """
-    Edita uma imagem via API externa.
-    Se guild_id for fornecido, usa o idioma do servidor para mensagens de erro.
-    """
-    # define idioma
-    language = "EN"
-    if guild_id:
-        language = db.get_server_value(guild_id, "language", default="EN")
+        # 1. Get upload URL
+        upload_data = session.get('https://supawork.ai/supawork/headshot/api/sys/oss/token', params={
+            'f_suffix': 'png',
+            'get_num': 1,
+            'unsafe': 1
+        }).json()
 
-    messages = {
-        "PT": {
-            "requesting": "Hm~ 🌸 estou processando sua obra de arte… 💖",
-            "error": "Ops~ 🌸 algo deu errado ao editar a imagem… 💖"
-        },
-        "EN": {
-            "requesting": "Hehe~ 🌸 I’m processing your masterpiece… 💖",
-            "error": "Oops~ 🌸 something went wrong while editing the image… 💖"
-        }
-    }
+        # 2. Upload image
+        if not upload_data.get('data'):
+            raise Exception('Upload URL not found')
+        
+        put_url = upload_data['data'][0]['put']
+        session.put(put_url, data=image)
 
-    msgs = messages.get(language, messages["EN"])
+        # 3. Bypass Cloudflare
+        cf_token = requests.post('https://api.nekolabs.web.id/tools/bypass/cf-turnstile', json={
+            'url': 'https://supawork.ai/nano-banana',
+            'siteKey': '0x4AAAAAACBjrLhJyEE6mq1c'
+        }).json().get('result')
 
-    # codifica texto e imagem para URL
-    prompt = urllib.parse.quote(texto)
-    img = urllib.parse.quote(imagem_url)
-    url = f"https://api.alyachan.dev/api/ai-edit?image={img}&prompt={prompt}&apikey={API_KEY}"
+        # 4. Process image
+        task = session.post('https://supawork.ai/supawork/headshot/api/media/image/generator', json={
+            'identity_id': identity,
+            'custom_prompt': prompt,
+            'image_urls': [upload_data['data'][0]['get']]
+        }, headers={'x-auth-challenge': cf_token}).json()
 
-    print(msgs["requesting"])
-    print(f"Making request to\n>> {url}\n")
+        # 5. Wait for result
+        for _ in range(60):
+            result = session.get('https://supawork.ai/supawork/headshot/api/media/aigc/result/list/v1').json()
+            if result.get('data', {}).get('list', [{}])[0].get('status') == 1:
+                return result['data']['list'][0]['url']
+            sleep(1)
 
-    async with aiohttp.ClientSession() as session:
-        try:
-            async with session.get(url) as resp:
-                data = await resp.json()
+        raise Exception('Timeout')
 
-                # tenta pegar a url da imagem editada
-                try:
-                    return data["data"]["images"][0]["url"]
-                except (KeyError, IndexError):
-                    raise Exception(msgs["error"])
-        except Exception as e:
-            raise Exception(f"{msgs['error']}\nDetalhes: {e}")
+    except Exception as e:
+        raise Exception(str(e))

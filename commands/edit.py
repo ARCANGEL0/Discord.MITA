@@ -1,7 +1,8 @@
 import discord
 from discord.ext import commands
 import aiohttp
-from db import db
+from db import db 
+from lib.nano import nanobanana
 import imghdr
 import io  # <- importante
 
@@ -68,33 +69,13 @@ class Edit(commands.Cog):
         # Send POST request
         # ===============================
         try:
-            form = aiohttp.FormData()
-            form.add_field("prompt", texto)
-            form.add_field(
-                "image",
-                image_bytes,
-                filename=image_filename,
-                content_type="application/octet-stream"
-            )
-
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    "https://api.zenzxz.my.id/api/maker/imagedit",
-                    data=form
-                ) as resp:
-                    print(f"[DEBUG] API response status: {resp.status}")
-                    if resp.status != 200:
-                        text = await resp.text()
-                        print(f"[DEBUG] API error text: {text}")
-                        await ctx.send(f"{edit_error_msg}\n\n`{text}`")
-                        return
-
-                    edited_bytes = await resp.read()
-                    print(f"[DEBUG] API response received, length: {len(edited_bytes)} bytes")
-                    img_type = imghdr.what(None, edited_bytes)
-                    if not img_type:
-                        img_type = "jpg"
-                    print(f"[DEBUG] Detected image type: {img_type}")
+            resp = nanobanana(texto,image_bytes)
+            edited_bytes = await resp.read()
+            print(f"[DEBUG] API response received, length: {len(edited_bytes)} bytes")
+            img_type = imghdr.what(None, edited_bytes)
+            if not img_type:
+                img_type = "jpg"
+            print(f"[DEBUG] Detected image type: {img_type}")
 
         except Exception as e:
         
