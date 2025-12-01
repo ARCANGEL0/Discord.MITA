@@ -1,83 +1,123 @@
 import aiohttp
-import uuid
 import asyncio
+import uuid
 
-UA = "Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36"
+UA = "Mozilla/5.0 (Linux; Android 15; SM-F958 Build/AP3A.240905.015) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.6723.86 Mobile Safari/537.36"
 
 async def nanobanana(prompt: str, image_bytes: bytes):
+    if not prompt:
+        raise Exception("Prompt is required.")
+    if not isinstance(image_bytes, (bytes, bytearray)):
+        raise Exception("Image must be a buffer.")
+
     identity = str(uuid.uuid4())
-    async with aiohttp.ClientSession(headers={
-        "origin": "https://supawork.ai",
+
+    # axios.create equivalent
+    base_headers = {
+        "authorization": "null",
+        "origin": "https://supawork.ai/",
         "referer": "https://supawork.ai/nano-banana",
         "user-agent": UA,
+        "x-auth-challenge": "",
         "x-identity-id": identity
-    }) as session:
-        try:
-            # 1. GET upload URL
-            async with session.get(
-                "https://supawork.ai/supawork/headshot/api/sys/oss/token",
-                params={"f_suffix": "png", "get_num": 1, "unsafe": 1}
-            ) as resp:
-                data = await resp.json()
-            if not data.get("data"):
-                raise Exception("Failed to get upload URL")
-            put_url = data["data"][0]["put"]
-            get_url = data["data"][0]["get"]
+    }
 
-            # 2. Upload image
-            async with session.put(put_url, data=image_bytes) as r:
+    async with aiohttp.ClientSession(headers=base_headers) as session:
+        # ======================================
+        # 1. GET /sys/oss/token
+        # ======================================
+        async with session.get(
+            "https://supawork.ai/supawork/headshot/api/sys/oss/token",
+            params={"f_suffix": "png", "get_num": 1, "unsafe": 1}
+        ) as resp:
+            up = await resp.json()
+
+        if not up.get("data"):
+            raise Exception("Upload url not found.")
+
+        img = up["data"][0]
+
+        # ======================================
+        # 2. PUT upload
+        # ======================================
+        async with aiohttp.ClientSession() as raw:
+            async with raw.put(img["put"], data=image_bytes) as r:
                 if r.status != 200:
-                    raise Exception(f"Failed to upload image, status {r.status}")
+                    raise Exception("Failed to upload image.")
 
-            # 3. Bypass Cloudflare
-            async with session.post(
+        # ======================================
+        # 3. Bypass CF
+        # ======================================
+        async with aiohttp.ClientSession() as s2:
+            async with s2.post(
                 "https://api.nekolabs.web.id/tools/bypass/cf-turnstile",
                 json={
                     "url": "https://supawork.ai/nano-banana",
                     "siteKey": "0x4AAAAAACBjrLhJyEE6mq1c"
                 }
             ) as cf_resp:
-                cf_data = await cf_resp.json()
-            cf_token = cf_data.get("result")
-            if not cf_token:
-                raise Exception("Failed to bypass CF")
+                cf = await cf_resp.json()
 
-            # 4. GET challenge token
+        if not cf.get("result"):
+            raise Exception("Failed to get cf token.")
+
+        # ======================================
+        # 4. GET /sys/challenge/token
+        # ======================================
+        async with session.get(
+            "https://supawork.ai/supawork/headshot/api/sys/challenge/token",
+            headers={"x-auth-challenge": cf["result"]}
+        ) as resp:
+            t = await resp.json()
+
+        token = t.get("data", {}).get("challenge_token")
+        if not token:
+            raise Exception("Failed to get token.")
+
+        # ======================================
+        # 5. POST /media/image/generator
+        # ======================================
+        payload = {
+            "identity_id": identity,
+            "aigc_app_code": "image_to_image_generator",
+            "aspect_ratio": "match_input_image",
+            "currency_type": "silver",
+            "custom_prompt": prompt,
+            "image_urls": [img["get"]],
+            "model_code": "google_nano_banana"
+        }
+
+        async with session.post(
+            "https://supawork.ai/supawork/headshot/api/media/image/generator",
+            json=payload,
+            headers={"x-auth-challenge": token}
+        ) as gen_resp:
+            task = await gen_resp.json()
+
+        if not task.get("data", {}).get("creation_id"):
+            raise Exception("Failed to create task.")
+
+        # ======================================
+        # 6. POLLING /media/aigc/result/list/v1
+        # ======================================
+        attempts = 0
+        while attempts < 60:
             async with session.get(
-                "https://supawork.ai/supawork/headshot/api/sys/challenge/token",
-                headers={"x-auth-challenge": cf_token}
-            ) as chall_resp:
-                chall_data = await chall_resp.json()
-            challenge_token = chall_data.get("data", {}).get("token")
-            if not challenge_token:
-                raise Exception("Challenge token missing")
+                "https://supawork.ai/supawork/headshot/api/media/aigc/result/list/v1",
+                params={"page_no": 1, "page_size": 10, "identity_id": identity}
+            ) as rr:
+                data = await rr.json()
 
-            # 5. CREATE TASK
-            async with session.post(
-                "https://supawork.ai/supawork/headshot/api/media/image/generator",
-                json={
-                    "identity_id": identity,
-                    "custom_prompt": prompt,
-                    "image_urls": [get_url]
-                },
-                headers={"x-auth-challenge": challenge_token}
-            ) as gen_resp:
-                gen_data = await gen_resp.json()
-            if gen_data.get("code") != 0:
-                raise Exception(f"Generator error: {gen_data}")
+            list_item = (
+                data.get("data", {})
+                .get("list", [{}])[0]
+                .get("list", [{}])[0]
+            )
 
-            # 6. POLLING LOOP
-            for _ in range(60):
-                await asyncio.sleep(1)
-                async with session.get(
-                    "https://supawork.ai/supawork/headshot/api/media/aigc/result/list/v1"
-                ) as res_resp:
-                    res = await res_resp.json()
-                lst = res.get("data", {}).get("list", [])
-                if lst and lst[0].get("status") == 1:
-                    return lst[0].get("url")
+            if list_item and list_item.get("status") == 1:
+                return list_item.get("url")
 
-            raise Exception("Timeout waiting for result")
+            attempts += 1
+            await asyncio.sleep(1)
 
-        except Exception as e:
-            raise Exception(f"Nanobanana error: {e}")
+        raise Exception("Timeout - Process took too long.")
