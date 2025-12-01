@@ -89,7 +89,9 @@ class Edit(commands.Cog):
                     if resp.status != 200:
                         raise Exception(f"Failed to download image, status {resp.status}")
                     edited_bytes = await resp.read()
-
+            import imghdr
+            img_type = imghdr.what(None, edited_bytes) or "png"
+            print(f"[DEBUG] Detected image type: {img_type}")
         except Exception as e:
             print(f"[DEBUG] nanobanana call failed: {e}")
             try: await ctx.message.add_reaction(MITA_CRY)
