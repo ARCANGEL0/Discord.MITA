@@ -79,17 +79,16 @@ class Edit(commands.Cog):
         # ===============================
         try:
             print("[DEBUG] Sending request to nanobanana...")
-            result_url = await nanobanana(texto, image_bytes)
+            result_list = await nanobanana(texto, image_bytes)
+            result_url = result_list[0] if isinstance(result_list, list) else result_list
             print(f"[DEBUG] Received result URL: {result_url}")
 
             # baixa imagem resultante
             async with aiohttp.ClientSession() as session:
-                async with session.get(result_url) as resp:
+                async with session.get(str(result_url)) as resp:  # garantir str
                     if resp.status != 200:
                         raise Exception(f"Failed to download image, status {resp.status}")
                     edited_bytes = await resp.read()
-
-            img_type = imghdr.what(None, edited_bytes) or "png"
 
         except Exception as e:
             print(f"[DEBUG] nanobanana call failed: {e}")
