@@ -86,7 +86,7 @@ async def on_guild_join(guild):
 async def on_message(message):
     if message.author.bot or message.guild is None:
         return
-    
+
     guild_id = str(message.guild.id)
     user_id = str(message.author.id)
 
@@ -95,21 +95,20 @@ async def on_message(message):
 
     handled = False
 
-    # Detecta quando o usuário está respondendo a alguma mensagem do GPT
+    # Detecta quando o usuário está respondendo à Mita
     if message.reference and message.reference.message_id:
         replied_id = message.reference.message_id
-        found = False
 
-        # Verifica histórico de todos os usuários do servidor
-        for u_id, user in db.get_all_users(guild_id).items():
+        # Procurar em todos os usuários do servidor
+        for u_id in db.get_all_user_ids(guild_id):
+            user = db.get_user(guild_id, u_id)
             hist = user.get("historico_gpt", [])
             for entry in hist:
                 if entry.get("role") == "assistant" and entry.get("id") == replied_id:
                     await gpt.handle_mita_mention(message, reference=True)
-                    found = True
+                    handled = True
                     break
-            if found:
-                handled = True
+            if handled:
                 break
 
     # Se não foi reply, mas mencionou "mita"
@@ -117,6 +116,7 @@ async def on_message(message):
         await gpt.handle_mita_mention(message)
 
     await bot.process_commands(message)
+
 # ------------------------------
 # COMMANDS
 # ------------------------------
