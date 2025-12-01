@@ -3,11 +3,14 @@ from discord.ext import commands
 from db import db
 import io
 import imghdr
-from lib.nano import nanobanana  # your module
+from lib.nano import nanobanana  # seu módulo
+import aiohttp
+import asyncio
 
 MITA_SMILE = "<:mitasmile:1444758849046184069>"
 MITA_CRY = "<:mitacry:1444760327714504954>"
 MITA_COOL = "<:mitaglasses:1444759883990962269>"
+LOADING = "<:loading:1444867632309342289>"
 
 class Edit(commands.Cog):
     def __init__(self, bot):
@@ -15,16 +18,20 @@ class Edit(commands.Cog):
 
     @commands.command(name="edit", aliases=["imagem"])
     async def edit(self, ctx, *, texto=None):
-        print("[DEBUG] Command received")
         guild_id = str(ctx.guild.id)
+        user_id = str(ctx.author.id)
 
+        print(f"[DEBUG] Command received from {ctx.author} ({user_id})")
+
+        await ctx.message.add_reaction(LOADING)
+
+        # idioma
         try:
             language = db.get_server_value(guild_id, "language", default="EN")
         except Exception:
             language = "EN"
-        print(f"[DEBUG] Language: {language}")
 
-        # Mita-style messages
+        # mensagens estilo Mita
         if language == "PT":
             no_text_msg = "Oiii~ (๑・ω・๑)💖 O que você quer que eu edite? Me conta tudo, por favor~ 🌸"
             no_image_msg = "Hm~ 🌸 parece que não tem imagem junto! Manda a imagem junto com `.edit`, tá~? 💖"
@@ -42,7 +49,7 @@ class Edit(commands.Cog):
             return
         print(f"[DEBUG] Prompt: {texto}")
 
-        # Get image from attachment or reply
+        # pegar imagem da mensagem ou reply
         image_bytes = None
         image_filename = None
 
@@ -52,12 +59,15 @@ class Edit(commands.Cog):
             image_filename = att.filename
             print(f"[DEBUG] Using uploaded attachment: {image_filename} ({len(image_bytes)} bytes)")
         elif ctx.message.reference:
-            replied_msg = await ctx.channel.fetch_message(ctx.message.reference.message_id)
-            if replied_msg.attachments:
-                att = replied_msg.attachments[0]
-                image_bytes = await att.read()
-                image_filename = att.filename
-                print(f"[DEBUG] Using replied message attachment: {image_filename} ({len(image_bytes)} bytes)")
+            try:
+                replied_msg = await ctx.channel.fetch_message(ctx.message.reference.message_id)
+                if replied_msg.attachments:
+                    att = replied_msg.attachments[0]
+                    image_bytes = await att.read()
+                    image_filename = att.filename
+                    print(f"[DEBUG] Using replied message attachment: {image_filename} ({len(image_bytes)} bytes)")
+            except Exception as e:
+                print(f"[DEBUG] Failed to fetch replied message: {e}")
 
         if not image_bytes:
             print("[DEBUG] No image found")
@@ -65,15 +75,14 @@ class Edit(commands.Cog):
             return
 
         # ===============================
-        # Call nanobanana module
+        # Chama nanobanana
         # ===============================
         try:
             print("[DEBUG] Sending request to nanobanana...")
             result_url = await nanobanana(texto, image_bytes)
             print(f"[DEBUG] Received result URL: {result_url}")
 
-            # Download the resulting image into buffer
-            import aiohttp
+            # baixa imagem resultante
             async with aiohttp.ClientSession() as session:
                 async with session.get(result_url) as resp:
                     if resp.status != 200:
@@ -84,14 +93,13 @@ class Edit(commands.Cog):
 
         except Exception as e:
             print(f"[DEBUG] nanobanana call failed: {e}")
-            try:
-                await ctx.message.add_reaction(MITA_CRY)
+            try: await ctx.message.add_reaction(MITA_CRY)
             except: pass
             await ctx.send(f"{edit_error_msg}\n\n`{e}`")
             return
 
         # ===============================
-        # Send final result
+        # Envia resultado final
         # ===============================
         try:
             file_buffer = io.BytesIO(edited_bytes)
@@ -100,18 +108,13 @@ class Edit(commands.Cog):
                 file=discord.File(fp=file_buffer, filename=f"edited.{img_type}")
             )
             print("[DEBUG] Image sent successfully to Discord")
-
-            try:
-                await ctx.message.add_reaction(MITA_SMILE)
+            try: await ctx.message.add_reaction(MITA_SMILE)
             except: pass
-
         except Exception as e:
             print(f"[DEBUG] Failed to send Discord file: {e}")
-            try:
-                await ctx.message.add_reaction(MITA_CRY)
+            try: await ctx.message.add_reaction(MITA_CRY)
             except: pass
             await ctx.send(f"{edit_error_msg}\n\n`{e}`")
-
 
 async def setup(bot):
     await bot.add_cog(Edit(bot))
