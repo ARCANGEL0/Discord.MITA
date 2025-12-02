@@ -1,11 +1,13 @@
-# gpt.py (handle_mita_mention atualizado)
 import aiohttp
 import asyncio
 from datetime import datetime
 import traceback
-from db import db
+from db import db # Importando o módulo 'db' presumido
 
-BASE_URL = "http://129.146.165.179/gpt4"
+# --- Configurações da API ---
+BASE_URL = "https://api.itsrose.net/gpt/chat"
+API_KEY = "sk_FZLFJCHEjOXemM_mGcf-DL-OxEuZc70errjVP1Ay0Ck" 
+# --- Limites e Constantes ---
 GPT_LIMIT = 4000
 DISCORD_LIMIT = 2000
 MAX_RETRIES = 8
@@ -19,15 +21,57 @@ def dbg(*msg):
     print(f"[DEBUG] {ts}", *msg)
 
 async def fetch_gpt_response(hist_gpt):
-    async with aiohttp.ClientSession() as session:
-        async with session.post(BASE_URL, json={"conversation": hist_gpt}) as resp:
+    """
+    Faz a requisição assíncrona para a API do ItsRose GPT, 
+    usando a estrutura de payload 'model' e 'messages' e o header Authorization.
+    """
+    
+    # 1. Preparar o payload (body) e o header
+    payload = {
+        'model': 'gpt-4.1-mini', 
+        'messages': hist_gpt      
+    }
+    headers = {
+        'Authorization': f'Bearer {API_KEY}',
+        'Content-Type': 'application/json'
+    }
+    
+    # 2. Iniciar a sessão e postar
+    async with aiohttp.ClientSession(headers=headers) as session:
+        async with session.post(BASE_URL, json=payload) as resp:
             dbg("API HTTP status:", resp.status)
+            
             if resp.status != 200:
                 dbg("API ERROR STATUS:", resp.status)
+                try:
+                    error_text = await resp.text()
+                    dbg("API Full Error Response:", error_text[:200] + "...")
+                except:
+                    pass
                 return None
-            data = await resp.json()
-            dbg("Parsed JSON response received")
-            return data.get("response")
+            
+            # 3. Processar a resposta JSON
+            try:
+                data = await resp.json()
+                dbg("Parsed JSON response received")
+                
+                # Extrair o conteúdo usando a nova estrutura: result.message.content
+                response_content = data.get("result", {}).get("message", {}).get("content")
+                
+                # Logar o reasoning_content para debug, se existir
+                reasoning = data.get("result", {}).get("message", {}).get("reasoning_content")
+                if reasoning:
+                     dbg("Reasoning Content Sample:", reasoning[:100] + "...") 
+                
+                return response_content
+                
+            except Exception as e:
+                dbg("Erro ao processar JSON da API:", e)
+                try:
+                    dbg("Raw response text on error:", await resp.text())
+                except:
+                    pass
+                return None
 
 async def retry_until_valid(hist_gpt):
     for attempt in range(1, MAX_RETRIES + 1):
